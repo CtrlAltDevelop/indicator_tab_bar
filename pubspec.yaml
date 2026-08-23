@@ -1,0 +1,41 @@
+name: indicator_tab_bar
+description: >-
+  A fixed-width tab indicator that underlines the label rather than the tab,
+  and a sliver AnimatedSwitcher for cross-fading the body each tab selects.
+version: 1.0.0
+homepage: https://github.com/CtrlAltDevelop
+repository: https://github.com/CtrlAltDevelop/indicator_tab_bar
+issue_tracker: https://github.com/CtrlAltDevelop/indicator_tab_bar/issues
+
+topics:
+  - tab-bar
+  - tabs
+  - indicator
+  - sliver
+  - widget
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+# Only `flutter/widgets.dart` is used — no Material import — so the package
+# works both with `package:flutter/material.dart` and with the `material_ui`
+# fork, whose `TabBar.indicator` takes the same `Decoration` type.
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+screenshots:
+  - description: >-
+      The indicator at three shapes under a scrollable tab bar, light and dark:
+      a rounded 20-wide bar, the same bar with square ends, and a wider pill.
+    path: screenshots/indicator.png
+  - description: >-
+      The sliver switcher half way through a fade, the incoming list ghosted in
+      under a pinned sliver app bar.
+    path: screenshots/sliver_switcher.png

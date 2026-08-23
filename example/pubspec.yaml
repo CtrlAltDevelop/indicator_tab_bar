@@ -1,0 +1,24 @@
+name: indicator_tab_bar_example
+description: Demonstrates indicator_tab_bar.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+# On `package:flutter/material.dart`, not `material_ui`, to show that the
+# indicator takes either one.
+dependencies:
+  flutter:
+    sdk: flutter
+  indicator_tab_bar:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
