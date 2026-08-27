@@ -15,8 +15,8 @@ topics:
   - widget
 
 environment:
-  sdk: ^3.13.0
-  flutter: ">=3.47.0"
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
 
 # Only `flutter/widgets.dart` is used — no Material import — so the package
 # works both with `package:flutter/material.dart` and with the `material_ui`

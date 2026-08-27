@@ -17,7 +17,7 @@ switcher is pure `flutter/widgets`. No assets, no other pub.dev dependency.
 flutter pub add indicator_tab_bar
 ```
 
-Requires Flutter 3.47.0 or newer, and so Dart 3.13.0 or newer — that is the
+Requires Flutter 3.44.0 or newer, and so Dart 3.12.0 or newer — that is the
 Flutter release which ships it.
 
 ## `LineTabIndicator`
