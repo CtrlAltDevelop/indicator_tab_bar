@@ -2,7 +2,7 @@ name: indicator_tab_bar
 description: >-
   A fixed-width tab indicator that underlines the label rather than the tab,
   and a sliver AnimatedSwitcher for cross-fading the body each tab selects.
-version: 1.0.0
+version: 1.1.0
 homepage: https://github.com/CtrlAltDevelop
 repository: https://github.com/CtrlAltDevelop/indicator_tab_bar
 issue_tracker: https://github.com/CtrlAltDevelop/indicator_tab_bar/issues

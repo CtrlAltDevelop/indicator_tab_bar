@@ -31,8 +31,12 @@ Future<void> _loadFonts() async {
 
 const List<String> _labels = <String>['Spot', 'Futures & derivatives', 'Earn'];
 
-/// A `TabBar` with [indicator] under its selected tab, on [brightness].
-Widget _bar(LineTabIndicator indicator, Brightness brightness, String caption) {
+/// A `TabBar` with the indicator [build] returns under its selected tab.
+Widget _bar(
+  LineTabIndicator Function(ColorScheme scheme) build,
+  Brightness brightness,
+  String caption,
+) {
   final ThemeData theme = ThemeData(
     colorSchemeSeed: const Color(0xFF2F6BFF),
     brightness: brightness,
@@ -69,7 +73,7 @@ Widget _bar(LineTabIndicator indicator, Brightness brightness, String caption) {
                 tabAlignment: TabAlignment.start,
                 dividerColor: theme.colorScheme.outlineVariant,
                 indicatorSize: TabBarIndicatorSize.label,
-                indicator: indicator.copyWith(color: theme.colorScheme.primary),
+                indicator: build(theme.colorScheme),
                 labelColor: theme.colorScheme.onSurface,
                 unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
                 tabs: <Widget>[
@@ -124,7 +128,7 @@ void main() {
           _Row(brightness: Brightness.dark),
         ],
       ),
-      const Size(720, 600),
+      const Size(720, 1000),
       '../../screenshots/indicator.png',
     );
   });
@@ -174,7 +178,7 @@ void main() {
   });
 }
 
-/// One brightness, with the same indicator at four shapes.
+/// One brightness, with the indicator at five shapes.
 class _Row extends StatelessWidget {
   const _Row({required this.brightness});
 
@@ -186,8 +190,8 @@ class _Row extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _bar(
-          const LineTabIndicator(
-            color: Color(0xFF000000),
+          (ColorScheme scheme) => LineTabIndicator(
+            color: scheme.primary,
             indicatorWidth: 20,
             strokeWidth: 3,
             radius: 4,
@@ -196,19 +200,46 @@ class _Row extends StatelessWidget {
           'indicatorWidth: 20, strokeWidth: 3, radius: 4',
         ),
         _bar(
-          const LineTabIndicator(color: Color(0xFF000000), indicatorWidth: 20),
+          (ColorScheme scheme) =>
+              LineTabIndicator(color: scheme.primary, indicatorWidth: 20),
           brightness,
           'indicatorWidth: 20, strokeWidth: 3, radius: 0 — square ends',
         ),
         _bar(
-          const LineTabIndicator(
-            color: Color(0xFF000000),
+          (ColorScheme scheme) => LineTabIndicator(
+            color: scheme.primary,
             indicatorWidth: 56,
             strokeWidth: 6,
             radius: 3,
           ),
           brightness,
           'indicatorWidth: 56, strokeWidth: 6, radius: 3 — a wider pill',
+        ),
+        _bar(
+          (ColorScheme scheme) => LineTabIndicator(
+            color: scheme.primary,
+            indicatorWidth: 20,
+            strokeWidth: 3,
+            radius: 4,
+            insets: const EdgeInsets.only(bottom: 6),
+            alignment: AlignmentDirectional.bottomStart,
+          ),
+          brightness,
+          'insets: bottom 6, alignment: bottomStart — lifted off the divider, '
+          'tucked under the start of the label',
+        ),
+        _bar(
+          (ColorScheme scheme) => LineTabIndicator.gradient(
+            gradient: LinearGradient(
+              colors: <Color>[scheme.primary, scheme.tertiary],
+            ),
+            indicatorWidth: 40,
+            strokeWidth: 4,
+            radius: 2,
+          ),
+          brightness,
+          'LineTabIndicator.gradient — filled along its length, primary to '
+          'tertiary',
         ),
       ],
     );

@@ -9,7 +9,7 @@ so the indicator works the same whether the `TabBar` comes from
 `package:flutter/material.dart` or from the `material_ui` fork — and the sliver
 switcher is pure `flutter/widgets`. No assets, no other pub.dev dependency.
 
-![The indicator at three shapes, light and dark](screenshots/indicator.png)
+![The indicator at five shapes and placements, light and dark](screenshots/indicator.png)
 
 ## Install
 
@@ -47,16 +47,20 @@ TabBar(
 )
 ```
 
-The bar is a rounded rectangle sitting on the bottom edge of the tab,
-`strokeWidth` tall and **exactly** `indicatorWidth` wide, centred. A tab
-narrower than the bar gets one that overhangs it evenly on both sides.
+The bar is a rounded rectangle `strokeWidth` tall and **exactly**
+`indicatorWidth` wide, placed inside the tab by `alignment` — bottom centre
+unless told otherwise — within the rect `insets` leaves. A tab narrower than the
+bar gets one that overhangs it evenly on both sides.
 
 | | |
 |---|---|
 | `color` | what the bar is filled with |
-| `strokeWidth` | its height, growing upwards from the bottom edge — default `3` |
+| `gradient` | fills it in place of `color` — see below — default `null` |
+| `strokeWidth` | its height — default `3` |
 | `indicatorWidth` | its width, independent of the tab — default `50` |
 | `radius` | its corner radius, clamped to `strokeWidth / 2` — default `0`, square ends |
+| `alignment` | where it sits in the tab — default `Alignment.bottomCenter` |
+| `insets` | deflates the rect it is aligned within — default `EdgeInsets.zero` |
 
 `radius` is clamped because past half the height there is nothing left to
 round: at or above `strokeWidth / 2` the ends are already semicircles. So
@@ -64,9 +68,55 @@ round: at or above `strokeWidth / 2` the ends are already semicircles. So
 pill, and the second screenshot row above — `radius: 0` — is the only shape
 that reads differently at that thickness.
 
-It is a value type: two indicators with the same fields are `==`, so `TabBar`
-does not repaint on a rebuild that changes nothing, and `Decoration.lerp`
-interpolates every field, so it animates across a theme change.
+### Placement
+
+`alignment` and `insets` decide where in the tab the bar lands, and the default
+pair — `Alignment.bottomCenter` with no insets — is the underline sitting flush
+on the bottom edge.
+
+```dart
+LineTabIndicator(
+  color: theme.colorScheme.primary,
+  indicatorWidth: 20,
+  radius: 4,
+  // Lift it clear of the bottom edge, so the TabBar divider shows beneath.
+  insets: const EdgeInsets.only(bottom: 6),
+  // Tuck it under the leading edge of the label instead of centring it;
+  // the directional form flips with the reading direction.
+  alignment: AlignmentDirectional.bottomStart,
+)
+```
+
+`Alignment.topCenter` makes it an overline instead, for a `TabBar` that sits
+below what it selects, and `Alignment.center` strikes through the label.
+
+### Gradient
+
+`LineTabIndicator.gradient` fills the bar with a `Gradient` rather than a flat
+colour. The gradient is laid out across **the bar**, not across the tab, so a
+`LinearGradient` runs over exactly `indicatorWidth` logical pixels no matter how
+wide the tab is.
+
+```dart
+LineTabIndicator.gradient(
+  gradient: LinearGradient(
+    colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
+  ),
+  indicatorWidth: 40,
+  strokeWidth: 4,
+  radius: 2,
+)
+```
+
+The shader is rebuilt only when the bar moves, so a gradient indicator sliding
+between tabs costs one shader per frame of the slide and none while it rests.
+
+### Value semantics
+
+Two indicators with the same fields are `==`, so `TabBar` does not repaint on a
+rebuild that changes nothing, and `Decoration.lerp` interpolates every field —
+alignment, insets and gradient included — so it animates across a theme change.
+A lerp against `null` fades the fill towards transparent without moving the bar.
 
 ## `SliverAnimatedSwitcher`
 
@@ -114,8 +164,9 @@ outgoing animation for them to shape.
 ## Example
 
 `example/` is a runnable app: a scrollable `TabBar` with the indicator under
-it, sliders for its three metrics, and a `CustomScrollView` whose body sliver
-is swapped per tab.
+it, live controls for every field — the three metrics, the inset, the placement
+and the gradient — and a `CustomScrollView` whose body sliver is swapped per
+tab.
 
 ```bash
 cd example && flutter run

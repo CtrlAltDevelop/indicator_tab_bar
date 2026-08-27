@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.1.0
+
+- `LineTabIndicator.alignment` — where the bar sits inside the tab. It still
+  defaults to `Alignment.bottomCenter`, so nothing moves unless you ask;
+  `Alignment.topCenter` makes it an overline for a `TabBar` below what it
+  selects, and `AlignmentDirectional.bottomStart` tucks it under the leading
+  edge of the label and flips with the reading direction.
+- `LineTabIndicator.insets` — deflates the rect the bar is aligned within, so
+  an underline can be lifted clear of the bottom edge and let the `TabBar`
+  divider show beneath it.
+- `LineTabIndicator.gradient` constructor — fills the bar with a `Gradient`
+  instead of a flat colour. The gradient is laid out across the bar itself, not
+  across the tab, so it runs over exactly `indicatorWidth` logical pixels, and
+  its shader is rebuilt only when the bar moves.
+- `hitTest`, `getClipPath` and painting now resolve `TextDirection`, falling
+  back to `TextDirection.ltr` for callers that have none to give.
+- A null side of `lerp` now fades the fill towards transparent without moving
+  the bar, gradients included, instead of lerping the colour alone.
+- `copyWith`, `==`, `hashCode` and `debugFillProperties` cover the new fields.
+
 ## 1.0.0
 
 - First release.

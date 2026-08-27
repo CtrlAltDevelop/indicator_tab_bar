@@ -3,20 +3,42 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indicator_tab_bar/indicator_tab_bar.dart';
 
 /// Paints [indicator] into a box of [size] and returns what it drew.
+///
+/// With no [textDirection] there is no [Directionality] above the box either,
+/// which is the case a decoration painted outside a `TabBar` has to survive.
 Future<RenderBox> _paint(
   WidgetTester tester,
   LineTabIndicator indicator, {
   Size size = const Size(100, 40),
+  TextDirection? textDirection,
 }) async {
-  await tester.pumpWidget(
-    Center(
-      child: SizedBox.fromSize(
-        size: size,
-        child: DecoratedBox(decoration: indicator),
-      ),
+  Widget box = Center(
+    child: SizedBox.fromSize(
+      size: size,
+      child: DecoratedBox(decoration: indicator),
     ),
   );
+  if (textDirection != null) {
+    box = Directionality(textDirection: textDirection, child: box);
+  }
+  await tester.pumpWidget(box);
   return tester.renderObject<RenderBox>(find.byType(DecoratedBox));
+}
+
+/// The rounded rect [indicator] paints into a [size] box, and its fill.
+({RRect rrect, Paint paint}) _record(
+  LineTabIndicator indicator, {
+  Size size = const Size(100, 40),
+  Offset offset = Offset.zero,
+  TextDirection? textDirection,
+}) {
+  final _RecordingCanvas canvas = _RecordingCanvas();
+  indicator.createBoxPainter().paint(
+    canvas,
+    offset,
+    ImageConfiguration(size: size, textDirection: textDirection),
+  );
+  return (rrect: canvas.rrects.single, paint: canvas.paints.single);
 }
 
 void main() {
@@ -219,6 +241,96 @@ void main() {
     });
   });
 
+  group('inside a TabBar, with geometry', () {
+    /// The rect the `TabBar` itself paints for [indicator].
+    Future<RRect> drawnFor(
+      WidgetTester tester,
+      LineTabIndicator indicator, {
+      TextDirection textDirection = TextDirection.ltr,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: textDirection,
+            child: DefaultTabController(
+              length: 2,
+              child: Scaffold(
+                appBar: AppBar(
+                  bottom: TabBar(
+                    indicatorSize: TabBarIndicatorSize.label,
+                    indicator: indicator,
+                    tabs: const <Widget>[
+                      Tab(text: 'Spot'),
+                      Tab(text: 'Futures'),
+                    ],
+                  ),
+                ),
+                body: const SizedBox(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final _RecordingCanvas canvas = _RecordingCanvas();
+      tester
+          .renderObject(find.byType(TabBar))
+          .paint(TestRecordingPaintingContext(canvas), Offset.zero);
+      return canvas.rrects.single;
+    }
+
+    const LineTabIndicator base = LineTabIndicator(
+      color: Color(0xFFFF0000),
+      indicatorWidth: 20,
+    );
+
+    testWidgets('a bottom inset lifts the bar off the divider', (
+      WidgetTester tester,
+    ) async {
+      final RRect plain = await drawnFor(tester, base);
+      final RRect lifted = await drawnFor(
+        tester,
+        base.copyWith(insets: const EdgeInsets.only(bottom: 8)),
+      );
+
+      expect(lifted.top, plain.top - 8);
+      expect(lifted.width, 20);
+    });
+
+    testWidgets('a top alignment turns it into an overline', (
+      WidgetTester tester,
+    ) async {
+      final RRect plain = await drawnFor(tester, base);
+      final RRect over = await drawnFor(
+        tester,
+        base.copyWith(alignment: Alignment.topCenter),
+      );
+
+      expect(over.top, lessThan(plain.top));
+      expect(over.left, plain.left, reason: 'only the vertical edge changed');
+    });
+
+    testWidgets('the TabBar hands the indicator its reading direction', (
+      WidgetTester tester,
+    ) async {
+      final LineTabIndicator indicator = base.copyWith(
+        alignment: AlignmentDirectional.bottomStart,
+      );
+
+      final RRect ltr = await drawnFor(tester, indicator);
+      final RRect rtl = await drawnFor(
+        tester,
+        indicator,
+        textDirection: TextDirection.rtl,
+      );
+
+      // The first tab is on the left in LTR and on the right in RTL, and the
+      // bar is tucked under the start of its label either way.
+      expect(rtl.left, greaterThan(ltr.left));
+    });
+  });
+
   group('value semantics', () {
     const LineTabIndicator base = LineTabIndicator(
       color: Color(0xFF112233),
@@ -290,6 +402,272 @@ void main() {
     });
   });
 
+  group('alignment', () {
+    testWidgets('topCenter draws the bar on the top edge instead', (
+      WidgetTester tester,
+    ) async {
+      final RenderBox box = await _paint(
+        tester,
+        const LineTabIndicator(
+          color: Color(0xFF000000),
+          indicatorWidth: 20,
+          alignment: Alignment.topCenter,
+        ),
+      );
+
+      expect(
+        box,
+        paints..rrect(
+          rrect: RRect.fromRectAndRadius(
+            const Rect.fromLTWH(40, 0, 20, 3),
+            Radius.zero,
+          ),
+        ),
+      );
+    });
+
+    testWidgets('centre puts it in the middle of the tab', (
+      WidgetTester tester,
+    ) async {
+      final RenderBox box = await _paint(
+        tester,
+        const LineTabIndicator(
+          color: Color(0xFF000000),
+          indicatorWidth: 20,
+          strokeWidth: 4,
+          alignment: Alignment.center,
+        ),
+      );
+
+      expect(
+        box,
+        paints..rrect(
+          rrect: RRect.fromRectAndRadius(
+            const Rect.fromLTWH(40, 18, 20, 4),
+            Radius.zero,
+          ),
+        ),
+      );
+    });
+
+    test('a directional alignment follows the reading direction', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF000000),
+        indicatorWidth: 20,
+        alignment: AlignmentDirectional.bottomStart,
+      );
+
+      expect(
+        _record(indicator, textDirection: TextDirection.ltr).rrect.left,
+        0,
+      );
+      expect(
+        _record(indicator, textDirection: TextDirection.rtl).rrect.left,
+        80,
+        reason: 'start is the right-hand edge in RTL',
+      );
+    });
+
+    test('no reading direction at all resolves as LTR', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF000000),
+        indicatorWidth: 20,
+        alignment: AlignmentDirectional.bottomEnd,
+      );
+
+      expect(_record(indicator).rrect.left, 80);
+      expect(
+        indicator.hitTest(const Size(100, 40), const Offset(90, 38)),
+        isTrue,
+      );
+    });
+
+    test('alignment is part of the identity, and lerps', () {
+      const LineTabIndicator bottom = LineTabIndicator(
+        color: Color(0xFF000000),
+      );
+      final LineTabIndicator top = bottom.copyWith(
+        alignment: Alignment.topCenter,
+      );
+
+      expect(top, isNot(bottom));
+      expect(top.hashCode, isNot(bottom.hashCode));
+      expect(
+        LineTabIndicator.lerp(bottom, top, 0.5)!.alignment,
+        Alignment.center,
+      );
+    });
+  });
+
+  group('insets', () {
+    testWidgets('a bottom inset lifts the bar clear of the edge', (
+      WidgetTester tester,
+    ) async {
+      final RenderBox box = await _paint(
+        tester,
+        const LineTabIndicator(
+          color: Color(0xFF000000),
+          indicatorWidth: 20,
+          insets: EdgeInsets.only(bottom: 6),
+        ),
+      );
+
+      expect(
+        box,
+        paints..rrect(
+          rrect: RRect.fromRectAndRadius(
+            // 3 tall, sitting 6 above the bottom of the 40-tall box.
+            const Rect.fromLTWH(40, 31, 20, 3),
+            Radius.zero,
+          ),
+        ),
+      );
+    });
+
+    test('horizontal insets shift the centre the bar is centred on', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF000000),
+        indicatorWidth: 20,
+        insets: EdgeInsets.only(left: 20),
+      );
+
+      // Centred in 20..100 rather than 0..100.
+      expect(_record(indicator).rrect.left, 50);
+    });
+
+    test('a directional inset follows the reading direction', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF000000),
+        indicatorWidth: 20,
+        insets: EdgeInsetsDirectional.only(start: 20),
+      );
+
+      expect(
+        _record(indicator, textDirection: TextDirection.ltr).rrect.left,
+        50,
+      );
+      expect(
+        _record(indicator, textDirection: TextDirection.rtl).rrect.left,
+        30,
+      );
+    });
+
+    test('insets are part of the identity, and lerp', () {
+      const LineTabIndicator base = LineTabIndicator(color: Color(0xFF000000));
+      final LineTabIndicator inset = base.copyWith(
+        insets: const EdgeInsets.only(bottom: 8),
+      );
+
+      expect(inset, isNot(base));
+      expect(
+        LineTabIndicator.lerp(base, inset, 0.5)!.insets,
+        const EdgeInsets.only(bottom: 4),
+      );
+    });
+  });
+
+  group('gradient', () {
+    const LinearGradient gradient = LinearGradient(
+      colors: <Color>[Color(0xFFFF0000), Color(0xFF0000FF)],
+    );
+
+    test('the gradient constructor fills with a shader, not a colour', () {
+      const LineTabIndicator indicator = LineTabIndicator.gradient(
+        gradient: gradient,
+        indicatorWidth: 20,
+      );
+
+      expect(indicator.color.a, 0, reason: 'nothing flat to fade through');
+
+      final ({RRect rrect, Paint paint}) drawn = _record(indicator);
+      expect(drawn.paint.shader, isNotNull);
+      expect(drawn.rrect.width, 20);
+    });
+
+    test('a gradient given alongside a colour paints over it', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF00FF00),
+        gradient: gradient,
+      );
+
+      expect(_record(indicator).paint.shader, isNotNull);
+    });
+
+    test(
+      'the shader is rebuilt as the bar moves, and reused while it sits',
+      () {
+        final BoxPainter painter = const LineTabIndicator.gradient(
+          gradient: gradient,
+          indicatorWidth: 20,
+        ).createBoxPainter();
+        final _RecordingCanvas canvas = _RecordingCanvas();
+
+        void paintAt(double dx) => painter.paint(
+          canvas,
+          Offset(dx, 0),
+          const ImageConfiguration(size: Size(100, 40)),
+        );
+
+        paintAt(0);
+        paintAt(0);
+        paintAt(200);
+
+        expect(canvas.paints, hasLength(3));
+        expect(
+          canvas.paints[1].shader,
+          same(canvas.paints[0].shader),
+          reason: 'the bar did not move, so the shader is still good',
+        );
+        expect(canvas.paints[2].shader, isNot(same(canvas.paints[0].shader)));
+      },
+    );
+
+    test('gradient is part of the identity, and lerps', () {
+      const LineTabIndicator flat = LineTabIndicator(color: Color(0xFF000000));
+      const LineTabIndicator shaded = LineTabIndicator.gradient(
+        gradient: gradient,
+      );
+
+      expect(shaded, isNot(flat));
+      expect(shaded, equals(shaded.copyWith()));
+      expect(shaded.hashCode, shaded.copyWith().hashCode);
+
+      final LineTabIndicator half = LineTabIndicator.lerp(flat, shaded, 0.5)!;
+      expect(half.gradient, isNotNull);
+      expect(half.gradient, Gradient.lerp(null, gradient, 0.5));
+    });
+
+    test('a null side of lerp fades the gradient out, keeping the shape', () {
+      const LineTabIndicator shaded = LineTabIndicator.gradient(
+        gradient: gradient,
+        indicatorWidth: 20,
+      );
+
+      final LineTabIndicator gone = LineTabIndicator.lerp(shaded, null, 1)!;
+      expect(
+        (gone.gradient! as LinearGradient).colors.every((Color c) => c.a == 0),
+        isTrue,
+      );
+      expect(gone.indicatorWidth, 20, reason: 'it faded, it did not shrink');
+    });
+
+    test('toString names the new fields when they are set', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF000000),
+        gradient: gradient,
+        alignment: Alignment.topCenter,
+        insets: EdgeInsets.only(bottom: 6),
+      );
+
+      expect(indicator.toString(), contains('gradient: LinearGradient'));
+      expect(indicator.toString(), contains('alignment: Alignment.topCenter'));
+      expect(
+        indicator.toString(),
+        contains('insets: EdgeInsets(0.0, 0.0, 0.0, 6.0)'),
+      );
+    });
+  });
+
   group('geometry', () {
     const LineTabIndicator indicator = LineTabIndicator(
       color: Color(0xFF000000),
@@ -314,13 +692,15 @@ void main() {
   });
 }
 
-/// A canvas that keeps the rounded rects painted through it.
+/// A canvas that keeps the rounded rects painted through it, and their fills.
 class _RecordingCanvas extends TestRecordingCanvas {
   final List<RRect> rrects = <RRect>[];
+  final List<Paint> paints = <Paint>[];
 
   @override
   void drawRRect(RRect rrect, Paint paint) {
     rrects.add(rrect);
+    paints.add(paint);
     super.drawRRect(rrect, paint);
   }
 }

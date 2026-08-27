@@ -14,6 +14,90 @@ enum Section {
   final String label;
 }
 
+/// Where the demo can put the bar.
+enum Placement {
+  bottom('bottom', Alignment.bottomCenter),
+  top('top', Alignment.topCenter),
+  start('start', AlignmentDirectional.bottomStart),
+  end('end', AlignmentDirectional.bottomEnd);
+
+  const Placement(this.label, this.alignment);
+
+  final String label;
+  final AlignmentGeometry alignment;
+}
+
+/// Every knob the demo exposes, as one value.
+@immutable
+class IndicatorConfig {
+  const IndicatorConfig({
+    this.indicatorWidth = 20,
+    this.strokeWidth = 3,
+    this.radius = 4,
+    this.bottomInset = 0,
+    this.placement = Placement.bottom,
+    this.shaded = false,
+  });
+
+  final double indicatorWidth;
+  final double strokeWidth;
+  final double radius;
+  final double bottomInset;
+  final Placement placement;
+
+  /// Whether to fill the bar with a gradient rather than a flat colour.
+  final bool shaded;
+
+  IndicatorConfig copyWith({
+    double? indicatorWidth,
+    double? strokeWidth,
+    double? radius,
+    double? bottomInset,
+    Placement? placement,
+    bool? shaded,
+  }) {
+    return IndicatorConfig(
+      indicatorWidth: indicatorWidth ?? this.indicatorWidth,
+      strokeWidth: strokeWidth ?? this.strokeWidth,
+      radius: radius ?? this.radius,
+      bottomInset: bottomInset ?? this.bottomInset,
+      placement: placement ?? this.placement,
+      shaded: shaded ?? this.shaded,
+    );
+  }
+
+  /// The indicator these knobs describe.
+  LineTabIndicator build(ColorScheme scheme) {
+    // `insets` deflates the rect the bar is aligned in, so a bottom inset
+    // lifts an underline and a top alignment is measured from the top edge.
+    final EdgeInsetsGeometry insets = switch (placement) {
+      Placement.top => EdgeInsets.only(top: bottomInset),
+      _ => EdgeInsets.only(bottom: bottomInset),
+    };
+
+    if (shaded) {
+      return LineTabIndicator.gradient(
+        gradient: LinearGradient(
+          colors: <Color>[scheme.primary, scheme.tertiary],
+        ),
+        strokeWidth: strokeWidth,
+        indicatorWidth: indicatorWidth,
+        radius: radius,
+        alignment: placement.alignment,
+        insets: insets,
+      );
+    }
+    return LineTabIndicator(
+      color: scheme.primary,
+      strokeWidth: strokeWidth,
+      indicatorWidth: indicatorWidth,
+      radius: radius,
+      alignment: placement.alignment,
+      insets: insets,
+    );
+  }
+}
+
 class ExampleApp extends StatefulWidget {
   const ExampleApp({super.key});
 
@@ -23,6 +107,7 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   ThemeMode _mode = ThemeMode.light;
+  TextDirection _direction = TextDirection.ltr;
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +123,17 @@ class _ExampleAppState extends State<ExampleApp> {
         brightness: Brightness.dark,
       ),
       themeMode: _mode,
+      // So the directional placements can be seen flipping.
+      builder: (BuildContext context, Widget? child) =>
+          Directionality(textDirection: _direction, child: child!),
       home: HomePage(
         onToggleBrightness: () => setState(() {
           _mode = _mode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+        }),
+        onToggleDirection: () => setState(() {
+          _direction = _direction == TextDirection.ltr
+              ? TextDirection.rtl
+              : TextDirection.ltr;
         }),
       ),
     );
@@ -48,9 +141,14 @@ class _ExampleAppState extends State<ExampleApp> {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({required this.onToggleBrightness, super.key});
+  const HomePage({
+    required this.onToggleBrightness,
+    required this.onToggleDirection,
+    super.key,
+  });
 
   final VoidCallback onToggleBrightness;
+  final VoidCallback onToggleDirection;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -65,9 +163,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Section _section = Section.spot;
 
   // The indicator's knobs, live, so the shape can be dialled in on screen.
-  double _indicatorWidth = 20;
-  double _strokeWidth = 3;
-  double _radius = 4;
+  IndicatorConfig _config = const IndicatorConfig();
 
   void _onTabChanged() {
     // Fires twice per swipe — on the drag and again on the settle.
@@ -92,6 +188,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         title: const Text('indicator_tab_bar'),
         actions: <Widget>[
           IconButton(
+            onPressed: widget.onToggleDirection,
+            icon: const Icon(Icons.format_textdirection_r_to_l),
+            tooltip: 'Toggle reading direction',
+          ),
+          IconButton(
             onPressed: widget.onToggleBrightness,
             icon: Icon(
               theme.brightness == Brightness.light
@@ -112,12 +213,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               Tab(text: section.label),
           ],
           indicatorSize: TabBarIndicatorSize.label,
-          indicator: LineTabIndicator(
-            color: theme.colorScheme.primary,
-            strokeWidth: _strokeWidth,
-            indicatorWidth: _indicatorWidth,
-            radius: _radius,
-          ),
+          indicator: _config.build(theme.colorScheme),
         ),
       ),
       // One scroll view for every tab, with only the body sliver swapped —
@@ -126,15 +222,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         slivers: <Widget>[
           SliverToBoxAdapter(
             child: _Knobs(
-              indicatorWidth: _indicatorWidth,
-              strokeWidth: _strokeWidth,
-              radius: _radius,
-              onChanged: (double width, double stroke, double radius) =>
-                  setState(() {
-                    _indicatorWidth = width;
-                    _strokeWidth = stroke;
-                    _radius = radius;
-                  }),
+              config: _config,
+              onChanged: (IndicatorConfig config) =>
+                  setState(() => _config = config),
             ),
           ),
           SliverAnimatedSwitcher(
@@ -182,19 +272,12 @@ class _SectionRows extends StatelessWidget {
   }
 }
 
-/// Sliders for the indicator's three metrics.
+/// Live controls for every field of the indicator.
 class _Knobs extends StatelessWidget {
-  const _Knobs({
-    required this.indicatorWidth,
-    required this.strokeWidth,
-    required this.radius,
-    required this.onChanged,
-  });
+  const _Knobs({required this.config, required this.onChanged});
 
-  final double indicatorWidth;
-  final double strokeWidth;
-  final double radius;
-  final void Function(double width, double stroke, double radius) onChanged;
+  final IndicatorConfig config;
+  final ValueChanged<IndicatorConfig> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -205,24 +288,61 @@ class _Knobs extends StatelessWidget {
         children: <Widget>[
           _slider(
             'indicatorWidth',
-            indicatorWidth,
+            config.indicatorWidth,
             0,
             120,
-            (double v) => onChanged(v, strokeWidth, radius),
+            (double v) => onChanged(config.copyWith(indicatorWidth: v)),
           ),
           _slider(
             'strokeWidth',
-            strokeWidth,
+            config.strokeWidth,
             0,
             12,
-            (double v) => onChanged(indicatorWidth, v, radius),
+            (double v) => onChanged(config.copyWith(strokeWidth: v)),
           ),
           _slider(
             'radius',
-            radius,
+            config.radius,
             0,
             12,
-            (double v) => onChanged(indicatorWidth, strokeWidth, v),
+            (double v) => onChanged(config.copyWith(radius: v)),
+          ),
+          _slider(
+            'insets',
+            config.bottomInset,
+            0,
+            16,
+            (double v) => onChanged(config.copyWith(bottomInset: v)),
+          ),
+          Row(
+            children: <Widget>[
+              const SizedBox(width: 120, child: Text('alignment')),
+              Expanded(
+                child: SegmentedButton<Placement>(
+                  showSelectedIcon: false,
+                  segments: <ButtonSegment<Placement>>[
+                    for (final Placement placement in Placement.values)
+                      ButtonSegment<Placement>(
+                        value: placement,
+                        label: Text(placement.label),
+                      ),
+                  ],
+                  selected: <Placement>{config.placement},
+                  onSelectionChanged: (Set<Placement> selection) =>
+                      onChanged(config.copyWith(placement: selection.single)),
+                ),
+              ),
+            ],
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('gradient'),
+            subtitle: const Text(
+              'LineTabIndicator.gradient, primary → tertiary',
+            ),
+            value: config.shaded,
+            onChanged: (bool value) =>
+                onChanged(config.copyWith(shaded: value)),
           ),
         ],
       ),

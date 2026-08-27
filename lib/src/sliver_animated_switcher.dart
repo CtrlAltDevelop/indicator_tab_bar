@@ -5,10 +5,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// The sliver returned must itself be a sliver — [SliverFadeTransition],
 /// [SliverOpacity] and friends qualify; [FadeTransition] does not.
-typedef SliverAnimatedSwitcherTransitionBuilder = Widget Function(
-  Widget sliver,
-  Animation<double> animation,
-);
+typedef SliverAnimatedSwitcherTransitionBuilder =
+    Widget Function(Widget sliver, Animation<double> animation);
 
 /// An [AnimatedSwitcher] for slivers: swap [child] for another sliver and the
 /// new one fades in, in place, inside a `CustomScrollView`.
