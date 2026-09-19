@@ -26,7 +26,7 @@ Or add it to `pubspec.yaml` yourself — it is a runtime dependency:
 
 ```yaml
 dependencies:
-  indicator_tab_bar: ">=1.2.0 <2.0.0"
+  indicator_tab_bar: ">=1.2.1 <2.0.0"
 ```
 
 Requires Flutter 3.44.0 or newer, and so Dart 3.12.0 or newer — that is the

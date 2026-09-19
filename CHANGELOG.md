@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- No change to the published code. CI now runs on `macos-latest`, the platform
+  the example's screenshot goldens are recorded on, so they no longer fail over
+  pixels nobody changed.
+
 ## 1.2.0
 
 - Fixed: `LineTabIndicator.lerp` no longer trips the non-negative asserts on
