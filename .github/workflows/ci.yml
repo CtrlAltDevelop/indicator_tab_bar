@@ -26,3 +26,6 @@ jobs:
       contents: read
     with:
       sdk: flutter
+      # The example's screenshot goldens are recorded on macOS; on another
+      # platform they fail over pixels nobody changed.
+      runs-on: macos-latest
