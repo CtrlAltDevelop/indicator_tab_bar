@@ -1,5 +1,10 @@
 # indicator_tab_bar
 
+[![pub package](https://img.shields.io/pub/v/indicator_tab_bar.svg)](https://pub.dev/packages/indicator_tab_bar)
+[![pub points](https://img.shields.io/pub/points/indicator_tab_bar)](https://pub.dev/packages/indicator_tab_bar/score)
+[![CI](https://github.com/CtrlAltDevelop/indicator_tab_bar/actions/workflows/ci.yml/badge.svg)](https://github.com/CtrlAltDevelop/indicator_tab_bar/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/CtrlAltDevelop/indicator_tab_bar/blob/main/LICENSE)
+
 A tab indicator that draws a **short bar of a fixed width** under the tab
 instead of one stretched across it, and a **sliver `AnimatedSwitcher`** for
 cross-fading the body each tab selects.
@@ -15,6 +20,13 @@ switcher is pure `flutter/widgets`. No assets, no other pub.dev dependency.
 
 ```bash
 flutter pub add indicator_tab_bar
+```
+
+Or add it to `pubspec.yaml` yourself — it is a runtime dependency:
+
+```yaml
+dependencies:
+  indicator_tab_bar: ">=1.2.0 <2.0.0"
 ```
 
 Requires Flutter 3.44.0 or newer, and so Dart 3.12.0 or newer — that is the

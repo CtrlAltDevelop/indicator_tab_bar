@@ -389,6 +389,25 @@ void main() {
       expect(LineTabIndicator.lerp(null, null, 0.5), isNull);
     });
 
+    test('an overshooting t never yields a negative size', () {
+      const LineTabIndicator thin = LineTabIndicator(
+        color: Color(0xFF000000),
+        strokeWidth: 1,
+        indicatorWidth: 10,
+        radius: 1,
+      );
+      const LineTabIndicator wide = LineTabIndicator(
+        color: Color(0xFF000000),
+        strokeWidth: 5,
+        indicatorWidth: 50,
+        radius: 5,
+      );
+      final LineTabIndicator back = LineTabIndicator.lerp(wide, thin, 1.5)!;
+      expect(back.strokeWidth, 0);
+      expect(back.indicatorWidth, 0);
+      expect(back.radius, 0);
+    });
+
     test('Decoration.lerp routes through it in both directions', () {
       expect(Decoration.lerp(a, b, 0.5), LineTabIndicator.lerp(a, b, 0.5));
       expect(Decoration.lerp(a, null, 0.5), a.lerpTo(null, 0.5));

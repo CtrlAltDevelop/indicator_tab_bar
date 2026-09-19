@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0
+
+- Fixed: `LineTabIndicator.lerp` no longer trips the non-negative asserts on
+  `strokeWidth`, `indicatorWidth` or `radius` when an overshooting curve
+  (`elasticOut`, `easeOutBack`) drives `t` outside 0..1; they are floored at 0.
+- Fixed: a gradient bar repainted with the same rect but a different text
+  direction no longer reuses a shader built for the old direction, so
+  directional gradients (`AlignmentDirectional`, `GradientRotation`) follow the
+  reading direction.
+- CI moved to the shared reusable workflow in CtrlAltDevelop/ci-workflows:
+  formatting, `analyze --fatal-infos`, the tests, the example, a changelog
+  entry per version, and a pana score with no points lost.
+- Dependency bounds are explicit ranges rather than carets — a floor that
+  resolves on the supported SDK, the next major as the ceiling — so a consumer
+  already on an older version in the same major is not forced to move.
+- The README carries the pub, pub points, CI and licence badges the other
+  packages here carry.
+
 ## 1.1.0
 
 - `LineTabIndicator.alignment` — where the bar sits inside the tab. It still

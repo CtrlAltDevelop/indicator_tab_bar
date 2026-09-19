@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/foundation.dart';
@@ -148,13 +149,19 @@ class LineTabIndicator extends Decoration {
     return LineTabIndicator(
       color: Color.lerp(a.color, b.color, t)!,
       gradient: Gradient.lerp(a.gradient, b.gradient, t),
-      strokeWidth: lerpDouble(a.strokeWidth, b.strokeWidth, t)!,
-      indicatorWidth: lerpDouble(a.indicatorWidth, b.indicatorWidth, t)!,
-      radius: lerpDouble(a.radius, b.radius, t)!,
+      // An overshooting curve (`elasticOut`, `easeOutBack`) drives `t` outside
+      // 0..1, and a sum that lands below zero would trip the constructor's
+      // non-negative asserts.
+      strokeWidth: _lerpNonNegative(a.strokeWidth, b.strokeWidth, t),
+      indicatorWidth: _lerpNonNegative(a.indicatorWidth, b.indicatorWidth, t),
+      radius: _lerpNonNegative(a.radius, b.radius, t),
       alignment: AlignmentGeometry.lerp(a.alignment, b.alignment, t)!,
       insets: EdgeInsetsGeometry.lerp(a.insets, b.insets, t)!,
     );
   }
+
+  static double _lerpNonNegative(double a, double b, double t) =>
+      math.max(0.0, lerpDouble(a, b, t)!);
 
   /// This indicator with its fill scaled towards transparent.
   ///
@@ -271,8 +278,9 @@ class _LineTabIndicatorPainter extends BoxPainter {
 
   final LineTabIndicator decoration;
 
-  /// The bar the cached [_paint]'s shader was built for.
+  /// The bar and direction the cached [_paint]'s shader was built for.
   Rect? _shadedRect;
+  TextDirection? _shadedDirection;
   Paint? _paint;
 
   @override
@@ -301,8 +309,13 @@ class _LineTabIndicatorPainter extends BoxPainter {
     if (gradient == null) {
       return _paint ??= (Paint()..color = decoration.color);
     }
-    if (_paint == null || _shadedRect != rect) {
+    // A directional gradient resolves differently per direction, so the
+    // direction is part of what the cached shader was built for.
+    if (_paint == null ||
+        _shadedRect != rect ||
+        _shadedDirection != textDirection) {
       _shadedRect = rect;
+      _shadedDirection = textDirection;
       _paint = Paint()
         ..shader = gradient.createShader(rect, textDirection: textDirection);
     }
