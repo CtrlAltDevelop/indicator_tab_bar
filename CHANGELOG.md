@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0
+
+- `LineTabIndicator.shadows` — shadows cast by the bar, painted beneath it. A
+  zero-offset shadow with a blur is a glow. They follow the bar's shape, lerp
+  with it, and fade with it when one side of a lerp is `null`.
+- Fixed: the gradient shader a `LineTabIndicator` built was never disposed, so
+  a bar sliding between tabs left one native shader per frame to the garbage
+  collector. The painter now disposes the shader it replaces and the one it
+  holds when `TabBar` disposes the painter.
+- `SliverAnimatedSwitcher` swaps at once when the platform asks for reduced
+  motion (`MediaQuery.disableAnimations`).
+- Releases are published to pub.dev from a version tag by
+  `.github/workflows/publish.yml`.
+
 ## 1.2.1
 
 - No change to the published code. CI now runs on `macos-latest`, the platform

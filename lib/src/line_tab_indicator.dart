@@ -49,6 +49,7 @@ class LineTabIndicator extends Decoration {
     this.radius = 0.0,
     this.alignment = Alignment.bottomCenter,
     this.insets = EdgeInsets.zero,
+    this.shadows = const <BoxShadow>[],
   }) : assert(strokeWidth >= 0, 'strokeWidth must not be negative'),
        assert(indicatorWidth >= 0, 'indicatorWidth must not be negative'),
        assert(radius >= 0, 'radius must not be negative');
@@ -64,6 +65,7 @@ class LineTabIndicator extends Decoration {
     this.radius = 0.0,
     this.alignment = Alignment.bottomCenter,
     this.insets = EdgeInsets.zero,
+    this.shadows = const <BoxShadow>[],
   }) : color = const Color(0x00000000),
        assert(strokeWidth >= 0, 'strokeWidth must not be negative'),
        assert(indicatorWidth >= 0, 'indicatorWidth must not be negative'),
@@ -110,6 +112,12 @@ class LineTabIndicator extends Decoration {
   /// it.
   final EdgeInsetsGeometry insets;
 
+  /// Shadows cast by the bar, painted beneath it, first to last.
+  ///
+  /// A shadow with a zero offset and a blur is a glow around the bar. The
+  /// shadow follows the bar's shape, [radius] included, and fades with it.
+  final List<BoxShadow> shadows;
+
   /// This indicator with the given fields replaced.
   ///
   /// Passing null keeps the current value, so this cannot clear [color] or
@@ -122,6 +130,7 @@ class LineTabIndicator extends Decoration {
     double? radius,
     AlignmentGeometry? alignment,
     EdgeInsetsGeometry? insets,
+    List<BoxShadow>? shadows,
   }) {
     return LineTabIndicator(
       color: color ?? this.color,
@@ -131,6 +140,7 @@ class LineTabIndicator extends Decoration {
       radius: radius ?? this.radius,
       alignment: alignment ?? this.alignment,
       insets: insets ?? this.insets,
+      shadows: shadows ?? this.shadows,
     );
   }
 
@@ -157,6 +167,7 @@ class LineTabIndicator extends Decoration {
       radius: _lerpNonNegative(a.radius, b.radius, t),
       alignment: AlignmentGeometry.lerp(a.alignment, b.alignment, t)!,
       insets: EdgeInsetsGeometry.lerp(a.insets, b.insets, t)!,
+      shadows: BoxShadow.lerpList(a.shadows, b.shadows, t)!,
     );
   }
 
@@ -171,6 +182,17 @@ class LineTabIndicator extends Decoration {
     return copyWith(
       color: Color.lerp(null, color, factor),
       gradient: gradient?.scale(factor),
+      // `BoxShadow.scale` scales the geometry; a fade scales the colour.
+      shadows: <BoxShadow>[
+        for (final BoxShadow s in shadows)
+          BoxShadow(
+            color: Color.lerp(null, s.color, factor)!,
+            offset: s.offset,
+            blurRadius: s.blurRadius,
+            spreadRadius: s.spreadRadius,
+            blurStyle: s.blurStyle,
+          ),
+      ],
     );
   }
 
@@ -229,7 +251,8 @@ class LineTabIndicator extends Decoration {
         other.indicatorWidth == indicatorWidth &&
         other.radius == radius &&
         other.alignment == alignment &&
-        other.insets == insets;
+        other.insets == insets &&
+        listEquals(other.shadows, shadows);
   }
 
   @override
@@ -241,6 +264,7 @@ class LineTabIndicator extends Decoration {
     radius,
     alignment,
     insets,
+    Object.hashAll(shadows),
   );
 
   @override
@@ -269,7 +293,8 @@ class LineTabIndicator extends Decoration {
           insets,
           defaultValue: EdgeInsets.zero,
         ),
-      );
+      )
+      ..add(IterableProperty<BoxShadow>('shadows', shadows, ifEmpty: null));
   }
 }
 
@@ -294,10 +319,23 @@ class _LineTabIndicatorPainter extends BoxPainter {
       offset & size,
       configuration.textDirection,
     );
+    for (final BoxShadow shadow in decoration.shadows) {
+      canvas.drawRRect(
+        rrect.shift(shadow.offset).inflate(shadow.spreadRadius),
+        shadow.toPaint(),
+      );
+    }
     canvas.drawRRect(
       rrect,
       _paintFor(rrect.outerRect, configuration.textDirection),
     );
+  }
+
+  @override
+  void dispose() {
+    _paint?.shader?.dispose();
+    _paint = null;
+    super.dispose();
   }
 
   /// The fill for a bar occupying [rect].
@@ -316,6 +354,9 @@ class _LineTabIndicatorPainter extends BoxPainter {
         _shadedDirection != textDirection) {
       _shadedRect = rect;
       _shadedDirection = textDirection;
+      // Each shader holds native memory until disposed, and a bar sliding
+      // between tabs builds a new one every frame.
+      _paint?.shader?.dispose();
       _paint = Paint()
         ..shader = gradient.createShader(rect, textDirection: textDirection);
     }

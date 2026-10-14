@@ -687,6 +687,102 @@ void main() {
     });
   });
 
+  group('shadows', () {
+    const BoxShadow glow = BoxShadow(
+      color: Color(0xFF2F6BFF),
+      blurRadius: 8,
+      spreadRadius: 1,
+      offset: Offset(0, 2),
+    );
+
+    test('are painted first, shifted and inflated, under the bar', () {
+      const LineTabIndicator indicator = LineTabIndicator(
+        color: Color(0xFF2F6BFF),
+        indicatorWidth: 20,
+        shadows: <BoxShadow>[glow],
+      );
+      final _RecordingCanvas canvas = _RecordingCanvas();
+      indicator.createBoxPainter().paint(
+        canvas,
+        Offset.zero,
+        const ImageConfiguration(size: Size(100, 40)),
+      );
+
+      expect(canvas.rrects, hasLength(2));
+      final RRect bar = canvas.rrects.last;
+      expect(canvas.rrects.first, bar.shift(const Offset(0, 2)).inflate(1));
+      expect(canvas.paints.first.color.toARGB32(), glow.color.toARGB32());
+    });
+
+    test('are part of the identity, and lerp', () {
+      const LineTabIndicator plain = LineTabIndicator(color: Color(0xFF000000));
+      const LineTabIndicator lit = LineTabIndicator(
+        color: Color(0xFF000000),
+        shadows: <BoxShadow>[glow],
+      );
+
+      expect(lit, isNot(plain));
+      expect(lit, equals(lit.copyWith()));
+      expect(lit.hashCode, lit.copyWith().hashCode);
+      expect(lit.toString(), contains('shadows'));
+      expect(plain.toString(), isNot(contains('shadows')));
+      expect(LineTabIndicator.lerp(plain, lit, 1)!.shadows.single, glow);
+    });
+
+    test('fade with the bar, and survive an overshooting t', () {
+      const LineTabIndicator lit = LineTabIndicator(
+        color: Color(0xFFFFFFFF),
+        shadows: <BoxShadow>[glow],
+      );
+
+      final BoxShadow gone = LineTabIndicator.lerp(
+        lit,
+        null,
+        1,
+      )!.shadows.single;
+      expect(gone.color.a, 0);
+      expect(gone.blurRadius, glow.blurRadius, reason: 'it faded, not shrank');
+
+      // `elasticOut` drives t below 0 and above 1.
+      expect(
+        () => LineTabIndicator.lerp(
+          lit,
+          const LineTabIndicator(color: Color(0xFFFFFFFF)),
+          -0.3,
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('lifecycle', () {
+    test('disposing the painter disposes the shader it built', () {
+      const LineTabIndicator shaded = LineTabIndicator.gradient(
+        gradient: LinearGradient(
+          colors: <Color>[Color(0xFF000000), Color(0xFFFFFFFF)],
+        ),
+        indicatorWidth: 20,
+      );
+      final BoxPainter painter = shaded.createBoxPainter();
+      final _RecordingCanvas canvas = _RecordingCanvas();
+      void paintAt(double dx) => painter.paint(
+        canvas,
+        Offset(dx, 0),
+        const ImageConfiguration(size: Size(100, 40)),
+      );
+
+      paintAt(0);
+      paintAt(200);
+      final Shader first = canvas.paints[0].shader!;
+      final Shader second = canvas.paints[1].shader!;
+      expect(first.debugDisposed, isTrue, reason: 'replaced, so let go');
+      expect(second.debugDisposed, isFalse);
+
+      painter.dispose();
+      expect(second.debugDisposed, isTrue);
+    });
+  });
+
   group('geometry', () {
     const LineTabIndicator indicator = LineTabIndicator(
       color: Color(0xFF000000),

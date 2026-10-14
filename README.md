@@ -73,6 +73,7 @@ bar gets one that overhangs it evenly on both sides.
 | `radius` | its corner radius, clamped to `strokeWidth / 2` — default `0`, square ends |
 | `alignment` | where it sits in the tab — default `Alignment.bottomCenter` |
 | `insets` | deflates the rect it is aligned within — default `EdgeInsets.zero` |
+| `shadows` | shadows cast by the bar — see below — default none |
 
 `radius` is clamped because past half the height there is nothing left to
 round: at or above `strokeWidth / 2` the ends are already semicircles. So
@@ -122,6 +123,25 @@ LineTabIndicator.gradient(
 
 The shader is rebuilt only when the bar moves, so a gradient indicator sliding
 between tabs costs one shader per frame of the slide and none while it rests.
+
+### Shadows
+
+`shadows` takes the same `BoxShadow`s a `BoxDecoration` does, cast by the bar and
+following its rounded shape. A zero offset with a blur is a glow:
+
+```dart
+LineTabIndicator(
+  color: theme.colorScheme.primary,
+  indicatorWidth: 24,
+  radius: 2,
+  shadows: [
+    BoxShadow(
+      color: theme.colorScheme.primary.withValues(alpha: 0.6),
+      blurRadius: 8,
+    ),
+  ],
+)
+```
 
 ### Value semantics
 

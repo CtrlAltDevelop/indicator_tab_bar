@@ -181,4 +181,21 @@ void main() {
     expect(switcher.toString(), contains('0:00:00.400000'));
     expect(switcher.toString(), contains('switchInCurve: Cubic'));
   });
+
+  testWidgets('swaps at once when the platform asks for reduced motion', (
+    WidgetTester tester,
+  ) async {
+    Widget app(Widget sliver) => MediaQuery(
+      data: const MediaQueryData(disableAnimations: true),
+      child: _scroller(sliver),
+    );
+
+    await tester.pumpWidget(app(_page('orders')));
+    await tester.pumpWidget(app(_page('trades')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(_opacity(tester), 1.0);
+    expect(find.text('orders'), findsNothing);
+  });
 }

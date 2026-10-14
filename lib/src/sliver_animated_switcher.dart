@@ -42,6 +42,9 @@ typedef SliverAnimatedSwitcherTransitionBuilder =
 /// begins, and what you see is the incoming one fading up in the space it
 /// leaves. That is why there is no `switchOutCurve` or `reverseDuration` here:
 /// there is no outgoing animation for them to shape.
+///
+/// When the platform asks for reduced motion (`MediaQuery.disableAnimations`)
+/// the swap is immediate, and [duration] is not waited on.
 class SliverAnimatedSwitcher extends StatelessWidget {
   /// Creates a switcher that fades between slivers.
   const SliverAnimatedSwitcher({
@@ -80,7 +83,11 @@ class SliverAnimatedSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: duration,
+      // Reduce-motion users get the swap at once, as `MaterialApp` page
+      // transitions do for them.
+      duration: MediaQuery.maybeDisableAnimationsOf(context) ?? false
+          ? Duration.zero
+          : duration,
       switchInCurve: switchInCurve,
       transitionBuilder: transitionBuilder,
       // Drop the outgoing slivers rather than stacking them: `AnimatedSwitcher`
