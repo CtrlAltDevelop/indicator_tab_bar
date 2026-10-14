@@ -20,7 +20,9 @@ environment:
 
 # Only `flutter/widgets.dart` is used — no Material import — so the package
 # works both with `package:flutter/material.dart` and with the `material_ui`
-# fork, whose `TabBar.indicator` takes the same `Decoration` type.
+# fork, whose `TabBar.indicator` takes the same `Decoration` type. The tests
+# need a `TabBar`, hence `material_ui` below, in dev_dependencies only: a
+# consumer is not made to pull it in.
 dependencies:
   flutter:
     sdk: flutter
@@ -29,6 +31,7 @@ dev_dependencies:
   flutter_lints: ">=6.0.0 <7.0.0"
   flutter_test:
     sdk: flutter
+  material_ui: ">=1.0.0 <2.0.0"
 
 screenshots:
   - description: >-

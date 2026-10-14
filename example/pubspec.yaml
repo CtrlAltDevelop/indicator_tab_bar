@@ -7,13 +7,14 @@ environment:
   sdk: ^3.12.0
   flutter: ">=3.44.0"
 
-# On `package:flutter/material.dart`, not `material_ui`, to show that the
-# indicator takes either one.
+# The indicator imports no Material, so it takes `material_ui` here and
+# `package:flutter/material.dart` alike.
 dependencies:
   flutter:
     sdk: flutter
   indicator_tab_bar:
     path: ../
+  material_ui: ">=1.0.0 <2.0.0"
 
 dev_dependencies:
   flutter_lints: ^6.0.0
