@@ -1,0 +1,21 @@
+# Dart / Flutter
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# dart doc output
+doc/api/
+
+# Example web scaffolding is only for the live demo.
+example/web/

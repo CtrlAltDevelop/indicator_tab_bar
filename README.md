@@ -4,6 +4,7 @@
 [![pub points](https://img.shields.io/pub/points/indicator_tab_bar)](https://pub.dev/packages/indicator_tab_bar/score)
 [![CI](https://github.com/CtrlAltDevelop/indicator_tab_bar/actions/workflows/ci.yml/badge.svg)](https://github.com/CtrlAltDevelop/indicator_tab_bar/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/CtrlAltDevelop/indicator_tab_bar/blob/main/LICENSE)
+[![live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ctrlaltdevelop.github.io/indicator_tab_bar/)
 
 A tab indicator that draws a **short bar of a fixed width** under the tab
 instead of one stretched across it, and a **sliver `AnimatedSwitcher`** for
